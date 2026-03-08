@@ -6,13 +6,17 @@ import { CategoryTabs } from "./components/CategoryTabs";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import { HeroBanner } from "./components/HeroBanner";
+import { ProductDetailModal } from "./components/ProductDetailModal";
 import { ProductGrid } from "./components/ProductGrid";
+import { SearchBar } from "./components/SearchBar";
 import { useLocalCart, useProducts } from "./hooks/useQueries";
 import type { Product } from "./hooks/useQueries";
 
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [cartOpen, setCartOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const productsRef = useRef<HTMLDivElement>(null);
 
   // Data queries
@@ -22,11 +26,20 @@ export default function App() {
   const { cartItems, addToCart, updateQuantity, removeFromCart, clearCart } =
     useLocalCart();
 
-  // Filter products by category
-  const filteredProducts =
+  // Filter products by category, then by search query
+  const categoryFiltered =
     activeCategory === "All"
       ? allProducts
       : allProducts.filter((p) => p.category === activeCategory);
+
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+  const filteredProducts = trimmedQuery
+    ? categoryFiltered.filter(
+        (p) =>
+          p.name.toLowerCase().includes(trimmedQuery) ||
+          p.description.toLowerCase().includes(trimmedQuery),
+      )
+    : categoryFiltered;
 
   const handleAddToCart = useCallback(
     (product: Product) => {
@@ -87,13 +100,25 @@ export default function App() {
             onCategoryChange={setActiveCategory}
           />
 
+          {/* Search bar */}
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            resultCount={filteredProducts.length}
+            isSearching={trimmedQuery.length > 0}
+          />
+
           {/* Product grid */}
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Section header */}
             <div className="flex items-baseline justify-between mb-6">
               <div>
                 <h2 className="font-display font-700 text-2xl text-foreground">
-                  {activeCategory === "All" ? "All Products" : activeCategory}
+                  {trimmedQuery
+                    ? `Results for "${searchQuery.trim()}"`
+                    : activeCategory === "All"
+                      ? "All Products"
+                      : activeCategory}
                 </h2>
                 {!productsLoading && (
                   <p className="text-sm text-muted-foreground mt-1">
@@ -109,6 +134,7 @@ export default function App() {
               isLoading={productsLoading}
               onAddToCart={handleAddToCart}
               activeCategory={activeCategory}
+              onProductClick={setSelectedProduct}
             />
           </section>
         </div>
@@ -116,6 +142,13 @@ export default function App() {
 
       {/* Footer */}
       <Footer onCategorySelect={handleCategorySelect} />
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onAddToCart={handleAddToCart}
+      />
 
       {/* Cart Sheet */}
       <CartSheet

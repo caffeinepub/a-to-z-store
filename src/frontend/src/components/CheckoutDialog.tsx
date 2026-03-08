@@ -31,7 +31,6 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { CartItem, Product } from "../hooks/useQueries";
 
-const DELIVERY_CHARGE = 120;
 const STORE_EMAIL = "farhaadahmad20@gmail.com";
 
 // EmailJS public configuration — uses EmailJS free tier
@@ -247,28 +246,6 @@ async function sendOrderEmail(params: {
   }
 }
 
-// Fallback: open mailto link with order details (works without EmailJS account)
-function openMailtoFallback(params: {
-  orderId: string;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  customerAddress: string;
-  itemsSummary: string;
-  grandTotal: string;
-}): void {
-  const subject = encodeURIComponent(
-    `New Order #${params.orderId} - A TO Z Store`,
-  );
-  const body = encodeURIComponent(
-    `NEW ORDER RECEIVED\n\nOrder ID: ${params.orderId}\n\nCUSTOMER DETAILS\nName: ${params.customerName}\nEmail: ${params.customerEmail}\nPhone: ${params.customerPhone}\nAddress: ${params.customerAddress}\n\nORDER ITEMS\n${params.itemsSummary}\n\nGrand Total: \u20B9${params.grandTotal}\n\nNote: Customer has uploaded payment proof. Please check your A TO Z Store dashboard for the screenshot.`,
-  );
-  window.open(
-    `mailto:${STORE_EMAIL}?subject=${subject}&body=${body}`,
-    "_blank",
-  );
-}
-
 export function CheckoutDialog({
   open,
   onOpenChange,
@@ -298,8 +275,6 @@ export function CheckoutDialog({
   const productMap = new Map<string, Product>(
     products.map((p) => [p.id.toString(), p]),
   );
-
-  const grandTotal = totalPrice / 100 + DELIVERY_CHARGE;
 
   const validateStep1 = (): boolean => {
     const newErrors: FormErrors = {};
@@ -394,8 +369,7 @@ export function CheckoutDialog({
       // Convert proof to base64
       const proofBase64 = await fileToBase64(proofFile);
 
-      // Try EmailJS first, fall back to mailto
-      let emailSent = false;
+      // Try to send email notification (best effort)
       try {
         await sendOrderEmail({
           orderId: newOrderId,
@@ -404,31 +378,18 @@ export function CheckoutDialog({
           customerPhone: formData.phone,
           customerAddress: formData.address,
           itemsSummary,
-          grandTotal: grandTotal.toFixed(0),
+          grandTotal: (totalPrice / 100).toFixed(0),
           proofBase64,
           proofFileName: proofFile.name,
         });
-        emailSent = true;
       } catch (emailErr) {
-        console.warn("EmailJS failed, trying mailto fallback:", emailErr);
-        // Open mailto as fallback — this opens user's email client pre-filled
-        openMailtoFallback({
-          orderId: newOrderId,
-          customerName: formData.name,
-          customerEmail: formData.email,
-          customerPhone: formData.phone,
-          customerAddress: formData.address,
-          itemsSummary,
-          grandTotal: grandTotal.toFixed(0),
-        });
-        emailSent = true; // mailto opened
+        // Email notification failed silently — order still completes
+        console.warn("Email notification could not be sent:", emailErr);
       }
 
       setOrderId(newOrderId);
       setStep(3);
-      if (emailSent) {
-        toast.success("Order confirmed! Notification sent to store.");
-      }
+      toast.success("Order confirmed! Thank you for your purchase.");
     } catch (error) {
       console.error("Order failed:", error);
       toast.error("Something went wrong. Please try again.");
@@ -564,25 +525,13 @@ export function CheckoutDialog({
                     })}
                   </div>
                   <Separator className="my-2" />
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-semibold">
-                      ₹{(totalPrice / 100).toFixed(0)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="text-muted-foreground">Delivery</span>
-                    <span className="font-semibold text-orange-600">
-                      +₹{DELIVERY_CHARGE}
-                    </span>
-                  </div>
                   <Separator className="my-2" />
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-foreground">
-                      Grand Total
+                      Total
                     </span>
                     <span className="font-bold text-lg text-primary">
-                      ₹{grandTotal.toFixed(0)}
+                      ₹{(totalPrice / 100).toFixed(0)}
                     </span>
                   </div>
                 </div>
@@ -726,16 +675,15 @@ export function CheckoutDialog({
                   {!errors.address &&
                     addressRegion === "india" &&
                     formData.address.trim().length > 5 && (
-                      <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
-                        Delivery available across India — ₹120 delivery charge
-                        applies.
+                      <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
+                        Delivery available across India — free delivery!
                       </p>
                     )}
                   {!errors.address &&
                     addressRegion === "delhi" &&
                     formData.address.trim().length > 5 && (
                       <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
-                        Delhi delivery — ₹120 delivery charge applies.
+                        Delhi delivery — free delivery!
                       </p>
                     )}
                 </div>
@@ -776,11 +724,10 @@ export function CheckoutDialog({
                     Amount to Pay
                   </p>
                   <p className="text-4xl font-bold text-primary font-display">
-                    ₹{grandTotal.toFixed(0)}
+                    ₹{(totalPrice / 100).toFixed(0)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Subtotal ₹{(totalPrice / 100).toFixed(0)} + Delivery ₹
-                    {DELIVERY_CHARGE}
+                    Free delivery included
                   </p>
                 </div>
 
@@ -837,7 +784,7 @@ export function CheckoutDialog({
                     <li>Scan the QR code above or enter the UPI ID</li>
                     <li>
                       Enter the amount:{" "}
-                      <strong>₹{grandTotal.toFixed(0)}</strong>
+                      <strong>₹{(totalPrice / 100).toFixed(0)}</strong>
                     </li>
                     <li>Complete the payment</li>
                     <li>Take a screenshot of the payment success screen</li>
@@ -928,7 +875,7 @@ export function CheckoutDialog({
                   <span className="text-sm font-semibold cursor-pointer select-none leading-snug">
                     Yes, I have completed the payment of{" "}
                     <span className="text-green-700">
-                      ₹{grandTotal.toFixed(0)}
+                      ₹{(totalPrice / 100).toFixed(0)}
                     </span>{" "}
                     via UPI
                     <span className="block text-xs font-normal text-muted-foreground mt-0.5">
@@ -1079,23 +1026,10 @@ export function CheckoutDialog({
                   })}
                 </div>
                 <Separator className="my-2.5" />
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-semibold">
-                    ₹{(totalPrice / 100).toFixed(0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm mt-1">
-                  <span className="text-muted-foreground">Delivery</span>
-                  <span className="font-semibold text-orange-600">
-                    +₹{DELIVERY_CHARGE}
-                  </span>
-                </div>
-                <Separator className="my-2.5" />
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-foreground">Grand Total</span>
+                  <span className="font-bold text-foreground">Total</span>
                   <span className="font-bold text-lg text-primary">
-                    ₹{grandTotal.toFixed(0)}
+                    ₹{(totalPrice / 100).toFixed(0)}
                   </span>
                 </div>
               </div>

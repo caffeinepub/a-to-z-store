@@ -20,6 +20,7 @@ interface ProductGridProps {
   isLoading: boolean;
   onAddToCart: (product: Product) => void | Promise<void>;
   activeCategory: string;
+  onProductClick: (product: Product) => void;
 }
 
 function ProductSkeleton() {
@@ -48,6 +49,7 @@ export function ProductGrid({
   isLoading,
   onAddToCart,
   activeCategory,
+  onProductClick,
 }: ProductGridProps) {
   if (isLoading) {
     return (
@@ -105,6 +107,7 @@ export function ProductGrid({
               product={product}
               index={index}
               onAddToCart={onAddToCart}
+              onProductClick={onProductClick}
             />
           </li>
         ))}

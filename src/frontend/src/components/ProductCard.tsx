@@ -26,9 +26,15 @@ interface ProductCardProps {
   product: Product;
   index: number;
   onAddToCart: (product: Product) => void | Promise<void>;
+  onProductClick: (product: Product) => void;
 }
 
-export function ProductCard({ product, index, onAddToCart }: ProductCardProps) {
+export function ProductCard({
+  product,
+  index,
+  onAddToCart,
+  onProductClick,
+}: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
@@ -66,8 +72,13 @@ export function ProductCard({ product, index, onAddToCart }: ProductCardProps) {
         className="bg-card rounded-2xl overflow-hidden shadow-card card-hover border border-border flex flex-col"
         data-ocid={`product.item.${index + 1}`}
       >
-        {/* Product image */}
-        <div className="relative overflow-hidden aspect-[4/3] bg-muted">
+        {/* Product image — clickable to open detail */}
+        <button
+          type="button"
+          className="relative overflow-hidden aspect-[4/3] bg-muted w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          onClick={() => onProductClick(product)}
+          aria-label={`View details for ${product.name}`}
+        >
           <img
             src={imageUrl}
             alt={product.name}
@@ -88,7 +99,13 @@ export function ProductCard({ product, index, onAddToCart }: ProductCardProps) {
               </span>
             </div>
           )}
-        </div>
+          {/* View details hint */}
+          <div className="absolute inset-0 bg-foreground/0 hover:bg-foreground/5 transition-colors flex items-end justify-center pb-2 opacity-0 hover:opacity-100">
+            <span className="bg-card/90 backdrop-blur-sm text-foreground text-xs font-semibold px-3 py-1 rounded-full shadow">
+              View Details
+            </span>
+          </div>
+        </button>
 
         {/* Product info */}
         <div className="p-4 flex flex-col flex-1 gap-2">
@@ -99,10 +116,14 @@ export function ProductCard({ product, index, onAddToCart }: ProductCardProps) {
             {product.category}
           </span>
 
-          {/* Name */}
-          <h3 className="font-display font-700 text-base text-foreground leading-snug line-clamp-2 flex-1">
+          {/* Name — clickable to open detail */}
+          <button
+            type="button"
+            className="font-display font-700 text-base text-foreground leading-snug line-clamp-2 flex-1 cursor-pointer hover:text-primary transition-colors text-left bg-transparent border-0 p-0 m-0"
+            onClick={() => onProductClick(product)}
+          >
             {product.name}
-          </h3>
+          </button>
 
           {/* Description */}
           <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
@@ -124,7 +145,10 @@ export function ProductCard({ product, index, onAddToCart }: ProductCardProps) {
                     : "bg-primary hover:bg-primary/90 text-primary-foreground"
                 }
                 disabled:opacity-50`}
-              onClick={handleAddToCart}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddToCart();
+              }}
               disabled={isAdding || isOutOfStock}
               data-ocid={`product.primary_button.${index + 1}`}
               aria-label={`Add ${product.name} to cart`}

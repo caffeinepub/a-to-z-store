@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Cabinet Grotesk";
+  src: url("/assets/fonts/CabinetGrotesk-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/assets/fonts/BricolageGrotesque-Variable.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* A TO Z Store — Vivid Tangerine + Deep Teal palette */
+    /* Background: warm off-white */
+    --background: 0.98 0.008 80;
+    --foreground: 0.18 0.025 260;
+
+    /* Cards: pure white */
+    --card: 1 0 0;
+    --card-foreground: 0.18 0.025 260;
+
+    /* Popover */
+    --popover: 1 0 0;
+    --popover-foreground: 0.18 0.025 260;
+
+    /* Primary: vivid tangerine orange */
+    --primary: 0.68 0.19 46;
+    --primary-foreground: 1 0 0;
+
+    /* Secondary: deep teal */
+    --secondary: 0.38 0.09 220;
+    --secondary-foreground: 0.98 0 0;
+
+    /* Muted */
+    --muted: 0.94 0.01 80;
+    --muted-foreground: 0.52 0.02 260;
+
+    /* Accent: sunny yellow */
+    --accent: 0.88 0.15 90;
+    --accent-foreground: 0.18 0.025 260;
+
+    /* Destructive */
+    --destructive: 0.58 0.22 27;
+    --destructive-foreground: 1 0 0;
+
+    /* Border / Input */
+    --border: 0.88 0.015 80;
+    --input: 0.88 0.015 80;
+    --ring: 0.68 0.19 46;
+
+    /* Charts */
+    --chart-1: 0.68 0.19 46;
+    --chart-2: 0.38 0.09 220;
+    --chart-3: 0.88 0.15 90;
+    --chart-4: 0.65 0.15 165;
+    --chart-5: 0.70 0.18 25;
+
+    /* Sidebar */
+    --sidebar: 0.22 0.04 260;
+    --sidebar-foreground: 0.95 0.01 80;
+    --sidebar-primary: 0.68 0.19 46;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.3 0.06 220;
+    --sidebar-accent-foreground: 0.95 0.01 80;
+    --sidebar-border: 0.28 0.05 260;
+    --sidebar-ring: 0.68 0.19 46;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Cabinet Grotesk", system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-weight: 700;
+  }
+}
+
+@layer utilities {
+  .store-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.68 0.19 46 / 0.08) 0%,
+      oklch(0.88 0.15 90 / 0.12) 50%,
+      oklch(0.38 0.09 220 / 0.06) 100%
+    );
+  }
+
+  .hero-overlay {
+    background: linear-gradient(
+      90deg,
+      oklch(0.12 0.04 260 / 0.75) 0%,
+      oklch(0.12 0.04 260 / 0.4) 60%,
+      transparent 100%
+    );
+  }
+
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px oklch(0.18 0.025 260 / 0.12);
+  }
+
+  .price-tag {
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+}

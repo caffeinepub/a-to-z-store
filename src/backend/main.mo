@@ -1,13 +1,17 @@
 import Map "mo:core/Map";
 import Set "mo:core/Set";
 import Iter "mo:core/Iter";
+import Array "mo:core/Array";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
 import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
+import Time "mo:core/Time";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   public type Product = {
     id : Nat;
@@ -39,14 +43,45 @@ actor {
     address : Text;
   };
 
+  public type OrderItem = {
+    productName : Text;
+    quantity : Nat;
+    unitPrice : Nat;
+  };
+
+  public type CustomerOrder = {
+    id : Nat;
+    customerName : Text;
+    customerEmail : Text;
+    customerPhone : Text;
+    customerAddress : Text;
+    items : [OrderItem];
+    totalPrice : Nat;
+    paymentProofUrl : Text;
+    status : Text;
+    createdAt : Int;
+  };
+
+  public type NewCustomerOrder = {
+    customerName : Text;
+    customerEmail : Text;
+    customerPhone : Text;
+    customerAddress : Text;
+    items : [OrderItem];
+    totalPrice : Nat;
+    paymentProofUrl : Text;
+  };
+
   let products = Map.empty<Nat, Product>();
   let userCarts = Map.empty<Principal, Map.Map<Nat, Nat>>();
   let orders = Map.empty<Nat, Order>();
+  let customerOrders = Map.empty<Nat, CustomerOrder>();
   let productCategories = Set.empty<Text>();
   let userProfiles = Map.empty<Principal, UserProfile>();
 
   var nextProductId = 1;
   var nextOrderId = 1;
+  var nextCustomerOrderId = 1;
 
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -389,5 +424,39 @@ actor {
     };
 
     orders.values().toArray().filter(func(order) { order.userId == caller });
+  };
+
+  // Customer Order - Save and Retrieve (No Auth Required)
+  public shared ({ caller }) func saveCustomerOrder(newOrder : NewCustomerOrder) : async () {
+    let customerOrder : CustomerOrder = {
+      id = nextCustomerOrderId;
+      customerName = newOrder.customerName;
+      customerEmail = newOrder.customerEmail;
+      customerPhone = newOrder.customerPhone;
+      customerAddress = newOrder.customerAddress;
+      items = newOrder.items;
+      totalPrice = newOrder.totalPrice;
+      paymentProofUrl = newOrder.paymentProofUrl;
+      status = "Pending";
+      createdAt = Time.now();
+    };
+
+    customerOrders.add(nextCustomerOrderId, customerOrder);
+    nextCustomerOrderId += 1;
+  };
+
+  public query ({ caller }) func getAllOrders() : async [CustomerOrder] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Admin access required");
+    };
+
+    let allOrders = customerOrders.values().toArray();
+    allOrders.sort(
+      func(a, b) {
+        if (a.createdAt < b.createdAt) { #greater } else if (a.createdAt > b.createdAt) {
+          #less;
+        } else { #equal };
+      }
+    );
   };
 };

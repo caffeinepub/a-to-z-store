@@ -23,12 +23,12 @@ import {
   Phone,
   ShoppingBag,
   Smartphone,
-  Trash2,
   User,
   X,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { useActor } from "../hooks/useActor";
 import type { CartItem, Product } from "../hooks/useQueries";
 
 const STORE_EMAIL = "farhaadahmad20@gmail.com";
@@ -37,6 +37,32 @@ const STORE_EMAIL = "farhaadahmad20@gmail.com";
 const EMAILJS_SERVICE_ID = "service_atoz";
 const EMAILJS_TEMPLATE_ID = "template_atoz_order";
 const EMAILJS_PUBLIC_KEY = "user_atoz_store_key";
+
+const LOCAL_ORDERS_KEY = "atozstore_orders";
+
+export interface LocalOrder {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  customerAddress: string;
+  items: Array<{ productName: string; quantity: number; unitPrice: number }>;
+  totalPrice: number;
+  paymentProofUrl: string;
+  status: string;
+  createdAt: number;
+}
+
+function saveOrderToLocalStorage(order: LocalOrder) {
+  try {
+    const raw = localStorage.getItem(LOCAL_ORDERS_KEY);
+    const orders: LocalOrder[] = raw ? (JSON.parse(raw) as LocalOrder[]) : [];
+    orders.unshift(order);
+    localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(orders));
+  } catch {
+    // ignore storage errors
+  }
+}
 
 interface CheckoutDialogProps {
   open: boolean;
@@ -254,6 +280,7 @@ export function CheckoutDialog({
   totalPrice,
   onSuccess,
 }: CheckoutDialogProps) {
+  const { actor } = useActor();
   const [step, setStep] = useState<Step>(1);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -352,22 +379,70 @@ export function CheckoutDialog({
     try {
       const newOrderId = generateOrderId();
 
-      // Build items summary text
-      const itemsSummary = cartItems
+      // Build items list
+      const orderItems = cartItems
         .map((item) => {
           const product = productMap.get(item.productId.toString());
-          if (!product) return "";
-          const lineTotal = (
-            (Number(product.price) * Number(item.quantity)) /
-            100
-          ).toFixed(0);
-          return `${product.name} x${Number(item.quantity)} = ₹${lineTotal}`;
+          if (!product) return null;
+          return {
+            productName: product.name,
+            quantity: Number(item.quantity),
+            unitPrice: Number(product.price),
+          };
         })
-        .filter(Boolean)
+        .filter(Boolean) as Array<{
+        productName: string;
+        quantity: number;
+        unitPrice: number;
+      }>;
+
+      // Build items summary text for email
+      const itemsSummary = orderItems
+        .map((item) => {
+          const lineTotal = ((item.unitPrice * item.quantity) / 100).toFixed(0);
+          return `${item.productName} x${item.quantity} = ₹${lineTotal}`;
+        })
         .join("\n");
 
       // Convert proof to base64
       const proofBase64 = await fileToBase64(proofFile);
+
+      // Save order to localStorage immediately (primary data store for admin panel)
+      const localOrder: LocalOrder = {
+        id: newOrderId,
+        customerName: formData.name,
+        customerEmail: formData.email,
+        customerPhone: formData.phone,
+        customerAddress: formData.address,
+        items: orderItems,
+        totalPrice: totalPrice,
+        paymentProofUrl: proofBase64,
+        status: "pending",
+        createdAt: Date.now(),
+      };
+      saveOrderToLocalStorage(localOrder);
+
+      // Try to save order to backend (best effort)
+      if (actor) {
+        try {
+          await actor.saveCustomerOrder({
+            customerName: formData.name,
+            customerEmail: formData.email,
+            customerPhone: formData.phone,
+            customerAddress: formData.address,
+            items: orderItems.map((item) => ({
+              productName: item.productName,
+              quantity: BigInt(item.quantity),
+              unitPrice: BigInt(item.unitPrice),
+            })),
+            totalPrice: BigInt(totalPrice),
+            paymentProofUrl: proofBase64,
+          });
+        } catch (backendErr) {
+          // Backend save failed silently — order is saved in localStorage
+          console.warn("Backend order save failed:", backendErr);
+        }
+      }
 
       // Try to send email notification (best effort)
       try {

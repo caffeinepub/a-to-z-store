@@ -89,6 +89,32 @@ export class ExternalBlob {
         return this;
     }
 }
+export interface CustomerOrder {
+    id: bigint;
+    customerName: string;
+    status: string;
+    customerPhone: string;
+    createdAt: bigint;
+    customerAddress: string;
+    items: Array<OrderItem>;
+    totalPrice: bigint;
+    customerEmail: string;
+    paymentProofUrl: string;
+}
+export interface OrderItem {
+    productName: string;
+    quantity: bigint;
+    unitPrice: bigint;
+}
+export interface NewCustomerOrder {
+    customerName: string;
+    customerPhone: string;
+    customerAddress: string;
+    items: Array<OrderItem>;
+    totalPrice: bigint;
+    customerEmail: string;
+    paymentProofUrl: string;
+}
 export interface CartItem {
     productId: bigint;
     quantity: bigint;
@@ -125,6 +151,7 @@ export interface backendInterface {
     addToCart(productId: bigint, quantity: bigint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     clearCart(): Promise<void>;
+    getAllOrders(): Promise<Array<CustomerOrder>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCart(): Promise<Array<CartItem>>;
@@ -137,6 +164,7 @@ export interface backendInterface {
     placeOrder(): Promise<bigint>;
     removeFromCart(productId: bigint): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    saveCustomerOrder(newOrder: NewCustomerOrder): Promise<void>;
     seedProducts(): Promise<void>;
     updateCartQuantity(productId: bigint, quantity: bigint): Promise<void>;
 }
@@ -196,6 +224,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.clearCart();
+            return result;
+        }
+    }
+    async getAllOrders(): Promise<Array<CustomerOrder>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllOrders();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllOrders();
             return result;
         }
     }
@@ -364,6 +406,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.saveCallerUserProfile(arg0);
+            return result;
+        }
+    }
+    async saveCustomerOrder(arg0: NewCustomerOrder): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.saveCustomerOrder(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.saveCustomerOrder(arg0);
             return result;
         }
     }

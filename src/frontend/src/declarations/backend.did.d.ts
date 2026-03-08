@@ -11,6 +11,27 @@ import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
 export interface CartItem { 'productId' : bigint, 'quantity' : bigint }
+export interface CustomerOrder {
+  'id' : bigint,
+  'customerName' : string,
+  'status' : string,
+  'customerPhone' : string,
+  'createdAt' : bigint,
+  'customerAddress' : string,
+  'items' : Array<OrderItem>,
+  'totalPrice' : bigint,
+  'customerEmail' : string,
+  'paymentProofUrl' : string,
+}
+export interface NewCustomerOrder {
+  'customerName' : string,
+  'customerPhone' : string,
+  'customerAddress' : string,
+  'items' : Array<OrderItem>,
+  'totalPrice' : bigint,
+  'customerEmail' : string,
+  'paymentProofUrl' : string,
+}
 export interface Order {
   'id' : bigint,
   'status' : string,
@@ -18,6 +39,11 @@ export interface Order {
   'createdAt' : bigint,
   'items' : Array<CartItem>,
   'totalPrice' : bigint,
+}
+export interface OrderItem {
+  'productName' : string,
+  'quantity' : bigint,
+  'unitPrice' : bigint,
 }
 export interface Product {
   'id' : bigint,
@@ -41,6 +67,7 @@ export interface _SERVICE {
   'addToCart' : ActorMethod<[bigint, bigint], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'clearCart' : ActorMethod<[], undefined>,
+  'getAllOrders' : ActorMethod<[], Array<CustomerOrder>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCart' : ActorMethod<[], Array<CartItem>>,
@@ -53,6 +80,7 @@ export interface _SERVICE {
   'placeOrder' : ActorMethod<[], bigint>,
   'removeFromCart' : ActorMethod<[bigint], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'saveCustomerOrder' : ActorMethod<[NewCustomerOrder], undefined>,
   'seedProducts' : ActorMethod<[], undefined>,
   'updateCartQuantity' : ActorMethod<[bigint, bigint], undefined>,
 }

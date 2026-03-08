@@ -7,6 +7,32 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
+export interface CustomerOrder {
+    id: bigint;
+    customerName: string;
+    status: string;
+    customerPhone: string;
+    createdAt: bigint;
+    customerAddress: string;
+    items: Array<OrderItem>;
+    totalPrice: bigint;
+    customerEmail: string;
+    paymentProofUrl: string;
+}
+export interface OrderItem {
+    productName: string;
+    quantity: bigint;
+    unitPrice: bigint;
+}
+export interface NewCustomerOrder {
+    customerName: string;
+    customerPhone: string;
+    customerAddress: string;
+    items: Array<OrderItem>;
+    totalPrice: bigint;
+    customerEmail: string;
+    paymentProofUrl: string;
+}
 export interface CartItem {
     productId: bigint;
     quantity: bigint;
@@ -42,6 +68,7 @@ export interface backendInterface {
     addToCart(productId: bigint, quantity: bigint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     clearCart(): Promise<void>;
+    getAllOrders(): Promise<Array<CustomerOrder>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCart(): Promise<Array<CartItem>>;
@@ -54,6 +81,7 @@ export interface backendInterface {
     placeOrder(): Promise<bigint>;
     removeFromCart(productId: bigint): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    saveCustomerOrder(newOrder: NewCustomerOrder): Promise<void>;
     seedProducts(): Promise<void>;
     updateCartQuantity(productId: bigint, quantity: bigint): Promise<void>;
 }

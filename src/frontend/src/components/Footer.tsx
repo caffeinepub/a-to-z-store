@@ -85,22 +85,32 @@ export function Footer({ onCategorySelect }: FooterProps) {
           <p className="text-secondary-foreground/60 text-xs">
             © {currentYear} A TO Z Store. All rights reserved.
           </p>
-          <p className="text-secondary-foreground/60 text-xs flex items-center gap-1">
-            Built with{" "}
-            <Heart
-              className="w-3 h-3 text-primary fill-primary inline"
-              aria-hidden="true"
-            />{" "}
-            using{" "}
+          <div className="flex items-center gap-3">
+            <p className="text-secondary-foreground/60 text-xs flex items-center gap-1">
+              Built with{" "}
+              <Heart
+                className="w-3 h-3 text-primary fill-primary inline"
+                aria-hidden="true"
+              />{" "}
+              using{" "}
+              <a
+                href={caffeineUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                caffeine.ai
+              </a>
+            </p>
             <a
-              href={caffeineUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
+              href="/#/admin"
+              className="text-secondary-foreground/25 hover:text-secondary-foreground/50 text-[10px] transition-colors"
+              data-ocid="footer.link"
+              aria-label="Admin panel"
             >
-              caffeine.ai
+              Admin
             </a>
-          </p>
+          </div>
         </div>
       </div>
     </footer>

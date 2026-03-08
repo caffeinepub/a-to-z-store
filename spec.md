@@ -1,26 +1,34 @@
 # A TO Z Store
 
 ## Current State
-- 16 static products with various prices stored in paise (price / 100 = Rs)
-- ₹120 delivery charge added to every order at checkout
-- Checkout sends email via EmailJS (fake keys) and falls back to opening `mailto:` which requires the customer to manually send the email
+- Full e-commerce store with product listing, cart, checkout (3-step: details → pay via UPI → confirm)
+- Orders are stored in backend but only with basic fields (userId, items, totalPrice, status)
+- No customer contact info (name, phone, address) or payment proof stored in backend
+- No admin panel to view orders
+- Frontend uses local cart (no backend dependency for browsing)
 
 ## Requested Changes (Diff)
 
 ### Add
-- ₹130 added to each product's price (13000 paise added to each static product price)
+- `CustomerOrder` type in backend with: id, customerName, email, phone, address, items (with product names + prices), totalPrice, paymentProofUrl, status, createdAt
+- `saveCustomerOrder(order)` public shared function (no auth required, any visitor can submit)
+- `getAllOrders()` admin-only query to retrieve all customer orders
+- Admin Orders Panel page at `/admin` route (or toggled via a secret button)
+- Admin login with a hardcoded password (e.g. "atozadmin123") — frontend only, no backend auth needed
+- Orders list showing: order ID, customer name, phone, address, items, total, payment proof image, timestamp
+- Payment proof displayed as a thumbnail that expands on click
 
 ### Modify
-- Remove delivery charge (DELIVERY_CHARGE = 0, hide delivery line from UI)
-- Fix email flow: remove the mailto fallback that opens the customer's email client. Order confirmation should complete automatically without requiring any manual action from the customer. Show a clean success state regardless of email outcome.
+- Checkout flow: on "Confirm Order", save the full order (customer details + items + payment proof) to backend via `saveCustomerOrder`
+- Header: add a small hidden "Admin" link (e.g. at bottom of page in footer or accessible via URL)
 
 ### Remove
-- Delivery charge display in cart summary, checkout step 1, checkout step 2, checkout step 3
-- Manual mailto fallback that opens the customer's email client
+- Nothing removed
 
 ## Implementation Plan
-1. Update all product prices in useQueries.ts by adding 13000 to each price
-2. Set DELIVERY_CHARGE = 0 in CheckoutDialog.tsx
-3. Hide delivery row from all 3 steps in CheckoutDialog (step 1 summary, step 2 amount display, step 3 items summary)
-4. Remove openMailtoFallback function and its call from handleConfirmOrder — order should complete silently even if EmailJS fails
-5. Hide delivery line in CartSheet footer if it shows delivery
+1. Update `main.mo` to add `CustomerOrder` type, `saveCustomerOrder` (public, no auth), and `getAllOrders` (admin only)
+2. Regenerate `backend.d.ts`
+3. Add Admin page component with password gate → orders list
+4. Update checkout flow to call `saveCustomerOrder` on order confirmation
+5. Add route/toggle to access admin panel (via `/admin` path or hidden link in footer)
+6. Validate and deploy

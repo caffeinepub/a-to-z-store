@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { AdminPanel } from "./components/AdminPanel";
 import { CartSheet } from "./components/CartSheet";
 import { CategoryTabs } from "./components/CategoryTabs";
 import { Footer } from "./components/Footer";
@@ -12,7 +13,8 @@ import { SearchBar } from "./components/SearchBar";
 import { useLocalCart, useProducts } from "./hooks/useQueries";
 import type { Product } from "./hooks/useQueries";
 
-export default function App() {
+// ── Store ────────────────────────────────────────────────────────────────────
+function Store() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -83,8 +85,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Toaster position="top-right" richColors />
-
       {/* Header */}
       <Header cartItems={cartItems} onCartOpen={() => setCartOpen(true)} />
 
@@ -161,5 +161,23 @@ export default function App() {
         onClearCart={handleClearCart}
       />
     </div>
+  );
+}
+
+// ── Root Router ──────────────────────────────────────────────────────────────
+export default function App() {
+  const [currentHash, setCurrentHash] = useState(() => window.location.hash);
+
+  useEffect(() => {
+    const handleHashChange = () => setCurrentHash(window.location.hash);
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  return (
+    <>
+      <Toaster position="top-right" richColors />
+      {currentHash === "#/admin" ? <AdminPanel /> : <Store />}
+    </>
   );
 }

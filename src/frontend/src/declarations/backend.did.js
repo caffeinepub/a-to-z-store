@@ -13,6 +13,23 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const OrderItem = IDL.Record({
+  'productName' : IDL.Text,
+  'quantity' : IDL.Nat,
+  'unitPrice' : IDL.Nat,
+});
+export const CustomerOrder = IDL.Record({
+  'id' : IDL.Nat,
+  'customerName' : IDL.Text,
+  'status' : IDL.Text,
+  'customerPhone' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'customerAddress' : IDL.Text,
+  'items' : IDL.Vec(OrderItem),
+  'totalPrice' : IDL.Nat,
+  'customerEmail' : IDL.Text,
+  'paymentProofUrl' : IDL.Text,
+});
 export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'email' : IDL.Text,
@@ -39,12 +56,22 @@ export const Product = IDL.Record({
   'category' : IDL.Text,
   'price' : IDL.Nat,
 });
+export const NewCustomerOrder = IDL.Record({
+  'customerName' : IDL.Text,
+  'customerPhone' : IDL.Text,
+  'customerAddress' : IDL.Text,
+  'items' : IDL.Vec(OrderItem),
+  'totalPrice' : IDL.Nat,
+  'customerEmail' : IDL.Text,
+  'paymentProofUrl' : IDL.Text,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addToCart' : IDL.Func([IDL.Nat, IDL.Nat], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'clearCart' : IDL.Func([], [], []),
+  'getAllOrders' : IDL.Func([], [IDL.Vec(CustomerOrder)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCart' : IDL.Func([], [IDL.Vec(CartItem)], ['query']),
@@ -61,6 +88,7 @@ export const idlService = IDL.Service({
   'placeOrder' : IDL.Func([], [IDL.Nat], []),
   'removeFromCart' : IDL.Func([IDL.Nat], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'saveCustomerOrder' : IDL.Func([NewCustomerOrder], [], []),
   'seedProducts' : IDL.Func([], [], []),
   'updateCartQuantity' : IDL.Func([IDL.Nat, IDL.Nat], [], []),
 });
@@ -72,6 +100,23 @@ export const idlFactory = ({ IDL }) => {
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
+  });
+  const OrderItem = IDL.Record({
+    'productName' : IDL.Text,
+    'quantity' : IDL.Nat,
+    'unitPrice' : IDL.Nat,
+  });
+  const CustomerOrder = IDL.Record({
+    'id' : IDL.Nat,
+    'customerName' : IDL.Text,
+    'status' : IDL.Text,
+    'customerPhone' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'customerAddress' : IDL.Text,
+    'items' : IDL.Vec(OrderItem),
+    'totalPrice' : IDL.Nat,
+    'customerEmail' : IDL.Text,
+    'paymentProofUrl' : IDL.Text,
   });
   const UserProfile = IDL.Record({
     'name' : IDL.Text,
@@ -96,12 +141,22 @@ export const idlFactory = ({ IDL }) => {
     'category' : IDL.Text,
     'price' : IDL.Nat,
   });
+  const NewCustomerOrder = IDL.Record({
+    'customerName' : IDL.Text,
+    'customerPhone' : IDL.Text,
+    'customerAddress' : IDL.Text,
+    'items' : IDL.Vec(OrderItem),
+    'totalPrice' : IDL.Nat,
+    'customerEmail' : IDL.Text,
+    'paymentProofUrl' : IDL.Text,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addToCart' : IDL.Func([IDL.Nat, IDL.Nat], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'clearCart' : IDL.Func([], [], []),
+    'getAllOrders' : IDL.Func([], [IDL.Vec(CustomerOrder)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCart' : IDL.Func([], [IDL.Vec(CartItem)], ['query']),
@@ -122,6 +177,7 @@ export const idlFactory = ({ IDL }) => {
     'placeOrder' : IDL.Func([], [IDL.Nat], []),
     'removeFromCart' : IDL.Func([IDL.Nat], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'saveCustomerOrder' : IDL.Func([NewCustomerOrder], [], []),
     'seedProducts' : IDL.Func([], [], []),
     'updateCartQuantity' : IDL.Func([IDL.Nat, IDL.Nat], [], []),
   });

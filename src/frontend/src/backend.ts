@@ -151,10 +151,10 @@ export interface backendInterface {
     addToCart(productId: bigint, quantity: bigint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     clearCart(): Promise<void>;
-    getAllOrders(): Promise<Array<CustomerOrder>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCart(): Promise<Array<CartItem>>;
+    getCustomerOrdersPublic(): Promise<Array<CustomerOrder>>;
     getOrders(): Promise<Array<Order>>;
     getProduct(productId: bigint): Promise<Product | null>;
     getProducts(): Promise<Array<Product>>;
@@ -167,6 +167,7 @@ export interface backendInterface {
     saveCustomerOrder(newOrder: NewCustomerOrder): Promise<void>;
     seedProducts(): Promise<void>;
     updateCartQuantity(productId: bigint, quantity: bigint): Promise<void>;
+    updateOrderStatus(orderId: bigint, newStatus: string): Promise<void>;
 }
 import type { Product as _Product, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -227,20 +228,6 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getAllOrders(): Promise<Array<CustomerOrder>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAllOrders();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllOrders();
-            return result;
-        }
-    }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
@@ -280,6 +267,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getCart();
+            return result;
+        }
+    }
+    async getCustomerOrdersPublic(): Promise<Array<CustomerOrder>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getCustomerOrdersPublic();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getCustomerOrdersPublic();
             return result;
         }
     }
@@ -448,6 +449,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.updateCartQuantity(arg0, arg1);
+            return result;
+        }
+    }
+    async updateOrderStatus(arg0: bigint, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateOrderStatus(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateOrderStatus(arg0, arg1);
             return result;
         }
     }

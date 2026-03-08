@@ -68,10 +68,10 @@ export interface backendInterface {
     addToCart(productId: bigint, quantity: bigint): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     clearCart(): Promise<void>;
-    getAllOrders(): Promise<Array<CustomerOrder>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCart(): Promise<Array<CartItem>>;
+    getCustomerOrdersPublic(): Promise<Array<CustomerOrder>>;
     getOrders(): Promise<Array<Order>>;
     getProduct(productId: bigint): Promise<Product | null>;
     getProducts(): Promise<Array<Product>>;
@@ -84,4 +84,5 @@ export interface backendInterface {
     saveCustomerOrder(newOrder: NewCustomerOrder): Promise<void>;
     seedProducts(): Promise<void>;
     updateCartQuantity(productId: bigint, quantity: bigint): Promise<void>;
+    updateOrderStatus(orderId: bigint, newStatus: string): Promise<void>;
 }

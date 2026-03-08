@@ -67,10 +67,10 @@ export interface _SERVICE {
   'addToCart' : ActorMethod<[bigint, bigint], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'clearCart' : ActorMethod<[], undefined>,
-  'getAllOrders' : ActorMethod<[], Array<CustomerOrder>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCart' : ActorMethod<[], Array<CartItem>>,
+  'getCustomerOrdersPublic' : ActorMethod<[], Array<CustomerOrder>>,
   'getOrders' : ActorMethod<[], Array<Order>>,
   'getProduct' : ActorMethod<[bigint], [] | [Product]>,
   'getProducts' : ActorMethod<[], Array<Product>>,
@@ -83,6 +83,7 @@ export interface _SERVICE {
   'saveCustomerOrder' : ActorMethod<[NewCustomerOrder], undefined>,
   'seedProducts' : ActorMethod<[], undefined>,
   'updateCartQuantity' : ActorMethod<[bigint, bigint], undefined>,
+  'updateOrderStatus' : ActorMethod<[bigint, string], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

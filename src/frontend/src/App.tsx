@@ -12,6 +12,21 @@ import { ProductGrid } from "./components/ProductGrid";
 import { SearchBar } from "./components/SearchBar";
 import { useLocalCart, useProducts } from "./hooks/useQueries";
 import type { Product } from "./hooks/useQueries";
+import { getSecretParameter } from "./utils/urlParams";
+
+// Persist caffeineAdminToken to localStorage on startup so AdminPanel can use it
+// even after the URL param is cleared and the session changes.
+const CAFE_ADMIN_TOKEN_KEY = "atoz_cafe_admin_token";
+(function captureAdminToken() {
+  try {
+    const token = getSecretParameter("caffeineAdminToken");
+    if (token) {
+      localStorage.setItem(CAFE_ADMIN_TOKEN_KEY, token);
+    }
+  } catch {
+    // Ignore storage errors
+  }
+})();
 
 // ── Store ────────────────────────────────────────────────────────────────────
 function Store() {

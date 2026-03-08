@@ -9,9 +9,9 @@ import Principal "mo:core/Principal";
 import Time "mo:core/Time";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
   public type Product = {
     id : Nat;
@@ -426,7 +426,7 @@ actor {
     orders.values().toArray().filter(func(order) { order.userId == caller });
   };
 
-  // Customer Order - Save and Retrieve (No Auth Required)
+  // Customer Order - Save and Retrieve
   public shared ({ caller }) func saveCustomerOrder(newOrder : NewCustomerOrder) : async () {
     let customerOrder : CustomerOrder = {
       id = nextCustomerOrderId;
@@ -445,11 +445,7 @@ actor {
     nextCustomerOrderId += 1;
   };
 
-  public query ({ caller }) func getAllOrders() : async [CustomerOrder] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Admin access required");
-    };
-
+  public query ({ caller }) func getCustomerOrdersPublic() : async [CustomerOrder] {
     let allOrders = customerOrders.values().toArray();
     allOrders.sort(
       func(a, b) {
@@ -458,5 +454,15 @@ actor {
         } else { #equal };
       }
     );
+  };
+
+  public shared ({ caller }) func updateOrderStatus(orderId : Nat, newStatus : Text) : async () {
+    let order = switch (customerOrders.get(orderId)) {
+      case (null) { Runtime.trap("Order not found") };
+      case (?existingOrder) {
+        let updatedOrder = { existingOrder with status = newStatus };
+        customerOrders.add(orderId, updatedOrder);
+      };
+    };
   };
 };

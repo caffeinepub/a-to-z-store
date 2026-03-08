@@ -321,8 +321,8 @@ export function CheckoutDialog({
     } else {
       const region = getAddressRegion(formData.address);
       setAddressRegion(region);
-      if (region === "outside") {
-        newErrors.address = "Sorry, we only deliver within India";
+      if (region !== "delhi") {
+        newErrors.address = "Sorry, we only deliver within Delhi at this time";
       }
     }
     setErrors(newErrors);
@@ -748,17 +748,10 @@ export function CheckoutDialog({
                     </p>
                   )}
                   {!errors.address &&
-                    addressRegion === "india" &&
-                    formData.address.trim().length > 5 && (
-                      <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
-                        Delivery available across India — free delivery!
-                      </p>
-                    )}
-                  {!errors.address &&
                     addressRegion === "delhi" &&
                     formData.address.trim().length > 5 && (
                       <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
-                        Delhi delivery — free delivery!
+                        Delhi delivery confirmed — free delivery!
                       </p>
                     )}
                 </div>

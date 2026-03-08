@@ -41,26 +41,69 @@ type FilterTab = "All" | "Pending" | "Confirmed" | "Cancelled";
 
 // ── Data fetching ─────────────────────────────────────────────────────────────
 
-async function fetchBackendOrders(): Promise<AdminOrder[]> {
-  const actor = await createActorWithConfig();
-  const orders = await actor.getCustomerOrdersPublic();
-  return orders.map((order) => ({
-    id: `ATZ-${order.id.toString()}`,
-    backendId: order.id,
-    customerName: order.customerName,
-    customerEmail: order.customerEmail,
-    customerPhone: order.customerPhone,
-    customerAddress: order.customerAddress,
-    items: order.items.map((i) => ({
-      productName: i.productName,
-      quantity: Number(i.quantity),
-      unitPrice: Number(i.unitPrice),
-    })),
-    totalPrice: Number(order.totalPrice),
-    paymentProofUrl: order.paymentProofUrl,
-    status: order.status,
-    createdAt: Number(order.createdAt) / 1_000_000, // ns → ms
-  }));
+const LOCAL_ORDERS_KEY = "atozstore_orders";
+
+function readLocalOrders(): AdminOrder[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_ORDERS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as LocalOrder[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+async function fetchAllOrders(): Promise<AdminOrder[]> {
+  // 1. Always read localStorage first — this is the primary source
+  const localOrders = readLocalOrders();
+
+  // 2. Build a map keyed by order id for fast lookup / deduplication
+  const orderMap = new Map<string, AdminOrder>(
+    localOrders.map((o) => [o.id, o]),
+  );
+
+  // 3. Try to also fetch from backend — merge in any orders not in localStorage
+  try {
+    const actor = await createActorWithConfig();
+    const backendOrders = await actor.getCustomerOrdersPublic();
+    for (const order of backendOrders) {
+      const mappedId = `ATZ-${order.id.toString()}`;
+      if (!orderMap.has(mappedId)) {
+        // Backend-only order — add it
+        orderMap.set(mappedId, {
+          id: mappedId,
+          backendId: order.id,
+          customerName: order.customerName,
+          customerEmail: order.customerEmail,
+          customerPhone: order.customerPhone,
+          customerAddress: order.customerAddress,
+          items: order.items.map((i) => ({
+            productName: i.productName,
+            quantity: Number(i.quantity),
+            unitPrice: Number(i.unitPrice),
+          })),
+          totalPrice: Number(order.totalPrice),
+          paymentProofUrl: order.paymentProofUrl,
+          status: order.status,
+          createdAt: Number(order.createdAt) / 1_000_000, // ns → ms
+        });
+      } else {
+        // Prefer localStorage version but attach backendId if missing
+        const existing = orderMap.get(mappedId)!;
+        if (!existing.backendId) {
+          orderMap.set(mappedId, { ...existing, backendId: order.id });
+        }
+      }
+    }
+  } catch {
+    // Backend unavailable — continue with localStorage orders only
+  }
+
+  // 4. Return merged array sorted by createdAt descending (newest first)
+  return Array.from(orderMap.values()).sort(
+    (a, b) => b.createdAt - a.createdAt,
+  );
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -540,12 +583,21 @@ export function AdminPanel() {
     setIsLoading(true);
     setFetchError(null);
     try {
-      const fetched = await fetchBackendOrders();
+      const fetched = await fetchAllOrders();
       setOrders(fetched);
+      // Connected as long as we could read localStorage (primary source)
       setBackendConnected(true);
     } catch {
-      setFetchError("Could not load orders. Check connection.");
-      setBackendConnected(false);
+      // Even on unexpected error, try to show localStorage orders
+      const localFallback = readLocalOrders();
+      if (localFallback.length > 0) {
+        setOrders(localFallback);
+        setBackendConnected(true);
+        setFetchError("Backend unreachable — showing locally stored orders.");
+      } else {
+        setFetchError("Could not load orders. Check connection.");
+        setBackendConnected(false);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -799,8 +851,8 @@ export function AdminPanel() {
             <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
             <p>
               {totalOrders === 0
-                ? "Connected to backend — no orders yet."
-                : `Loaded ${totalOrders} order${totalOrders !== 1 ? "s" : ""} from server.`}
+                ? "No orders yet — orders placed by customers will appear here."
+                : `Loaded ${totalOrders} order${totalOrders !== 1 ? "s" : ""}.`}
             </p>
           </div>
         )}

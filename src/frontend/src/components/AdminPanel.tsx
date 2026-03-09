@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,7 +22,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { createActorWithConfig } from "../config";
+import type { backendInterface } from "../backend.d.ts";
+import { useActor } from "../hooks/useActor";
 import type { LocalOrder } from "./CheckoutDialog";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -54,56 +54,69 @@ function readLocalOrders(): AdminOrder[] {
   }
 }
 
-async function fetchAllOrders(): Promise<AdminOrder[]> {
-  // 1. Always read localStorage first — this is the primary source
+async function fetchAllOrders(actor: backendInterface): Promise<AdminOrder[]> {
+  // PRIMARY: Always fetch from backend — this is the real source of truth
+  // Backend stores orders from ALL customers, not just this device
+  const backendOrders = await actor.getCustomerOrdersPublic();
+
+  const backendMapped: AdminOrder[] = backendOrders.map((order) => ({
+    id: `ATZ-${order.id.toString()}`,
+    backendId: order.id,
+    customerName: order.customerName,
+    customerEmail: order.customerEmail,
+    customerPhone: order.customerPhone,
+    customerAddress: order.customerAddress,
+    items: order.items.map((i) => ({
+      productName: i.productName,
+      quantity: Number(i.quantity),
+      unitPrice: Number(i.unitPrice),
+    })),
+    totalPrice: Number(order.totalPrice),
+    paymentProofUrl: order.paymentProofUrl || "",
+    status: order.status,
+    createdAt: Number(order.createdAt) / 1_000_000, // ns → ms
+    backendSaved: true,
+  }));
+
+  // Read local orders for proof image enrichment and fallback
   const localOrders = readLocalOrders();
 
-  // 2. Build a map keyed by order id for fast lookup / deduplication
-  const orderMap = new Map<string, AdminOrder>(
-    localOrders.map((o) => [o.id, o]),
+  // Build a lookup map: customerPhone+customerName -> local order (for proof images)
+  const localByKey = new Map<string, AdminOrder>(
+    localOrders.map((o) => [`${o.customerPhone}${o.customerName}`, o]),
   );
 
-  // 3. Try to also fetch from backend — merge in any orders not in localStorage
-  try {
-    const actor = await createActorWithConfig();
-    const backendOrders = await actor.getCustomerOrdersPublic();
-    for (const order of backendOrders) {
-      const mappedId = `ATZ-${order.id.toString()}`;
-      if (!orderMap.has(mappedId)) {
-        // Backend-only order — add it
-        orderMap.set(mappedId, {
-          id: mappedId,
-          backendId: order.id,
-          customerName: order.customerName,
-          customerEmail: order.customerEmail,
-          customerPhone: order.customerPhone,
-          customerAddress: order.customerAddress,
-          items: order.items.map((i) => ({
-            productName: i.productName,
-            quantity: Number(i.quantity),
-            unitPrice: Number(i.unitPrice),
-          })),
-          totalPrice: Number(order.totalPrice),
-          paymentProofUrl: order.paymentProofUrl,
-          status: order.status,
-          createdAt: Number(order.createdAt) / 1_000_000, // ns → ms
-        });
-      } else {
-        // Prefer localStorage version but attach backendId if missing
-        const existing = orderMap.get(mappedId)!;
-        if (!existing.backendId) {
-          orderMap.set(mappedId, { ...existing, backendId: order.id });
-        }
+  // Enrich backend orders with proof images from localStorage
+  // (Backend stores paymentProofUrl as "" to avoid ICP message size limits)
+  const enrichedBackend = backendMapped.map((order) => {
+    if (!order.paymentProofUrl) {
+      const localMatch = localByKey.get(
+        `${order.customerPhone}${order.customerName}`,
+      );
+      if (localMatch?.paymentProofUrl) {
+        return { ...order, paymentProofUrl: localMatch.paymentProofUrl };
       }
     }
-  } catch {
-    // Backend unavailable — continue with localStorage orders only
-  }
+    return order;
+  });
 
-  // 4. Return merged array sorted by createdAt descending (newest first)
-  return Array.from(orderMap.values()).sort(
-    (a, b) => b.createdAt - a.createdAt,
+  // SECONDARY: Include local-only orders where backend save failed
+  // Only show local orders that are NOT already represented in backend (backendSaved !== true)
+  const localOnlyFailed = localOrders.filter((o) => o.backendSaved !== true);
+
+  // Dedup: don't show local orders that are already in the backend (same customer)
+  const backendCustomerKeys = new Set(
+    enrichedBackend.map((o) => `${o.customerPhone}${o.customerName}`),
   );
+  const trulyLocalOnly = localOnlyFailed.filter(
+    (o) => !backendCustomerKeys.has(`${o.customerPhone}${o.customerName}`),
+  );
+
+  // Merge: backend orders first (source of truth), then any failed-backend local orders
+  const merged = [...enrichedBackend, ...trulyLocalOnly];
+
+  // Return sorted by createdAt descending (newest first)
+  return merged.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -211,6 +224,7 @@ function ProofOverlay({ src, onClose }: ProofOverlayProps) {
 interface OrderCardProps {
   order: AdminOrder;
   index: number;
+  actor: backendInterface;
   onOrderCancelled: () => void;
   onOrderStatusChanged: () => void;
 }
@@ -218,6 +232,7 @@ interface OrderCardProps {
 function OrderCard({
   order,
   index,
+  actor,
   onOrderCancelled,
   onOrderStatusChanged,
 }: OrderCardProps) {
@@ -243,7 +258,6 @@ function OrderCard({
 
     setIsCancelling(true);
     try {
-      const actor = await createActorWithConfig();
       await actor.updateOrderStatus(order.backendId, "Cancelled");
       toast.success("Order cancelled");
       onOrderCancelled();
@@ -261,7 +275,6 @@ function OrderCard({
     }
     setIsUpdatingStatus(true);
     try {
-      const actor = await createActorWithConfig();
       await actor.updateOrderStatus(order.backendId, newStatus);
       toast.success(`Order marked as ${newStatus}`);
       onOrderStatusChanged();
@@ -419,6 +432,17 @@ function OrderCard({
             </>
           )}
 
+          {!order.paymentProofUrl && (
+            <>
+              <Separator />
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-700 flex items-center gap-2">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                Payment proof not available on this device. The customer
+                uploaded it from their device.
+              </div>
+            </>
+          )}
+
           <Separator />
 
           {/* ── Actions: Status + Contact ── */}
@@ -561,6 +585,8 @@ function StatsCard({ label, value, icon, accent }: StatsCardProps) {
 // ── Main AdminPanel ───────────────────────────────────────────────────────────
 
 export function AdminPanel() {
+  const { actor, isFetching: actorLoading } = useActor();
+
   const [isAuthed, setIsAuthed] = useState(() => {
     try {
       return sessionStorage.getItem(ADMIN_SESSION_KEY) === "true";
@@ -580,36 +606,47 @@ export function AdminPanel() {
 
   // ── Load orders ──
   const loadOrders = useCallback(async () => {
+    if (!actor) return;
     setIsLoading(true);
     setFetchError(null);
     try {
-      const fetched = await fetchAllOrders();
+      const fetched = await fetchAllOrders(actor);
       setOrders(fetched);
-      // Connected as long as we could read localStorage (primary source)
       setBackendConnected(true);
-    } catch {
-      // Even on unexpected error, try to show localStorage orders
+    } catch (err) {
+      console.error("Failed to load orders from backend:", err);
+      // Fallback: show locally stored orders if backend is unreachable
       const localFallback = readLocalOrders();
       if (localFallback.length > 0) {
         setOrders(localFallback);
-        setBackendConnected(true);
-        setFetchError("Backend unreachable — showing locally stored orders.");
+        setBackendConnected(false);
+        setFetchError(
+          "Could not reach server — showing orders saved on this device only. Tap Refresh to try again.",
+        );
       } else {
-        setFetchError("Could not load orders. Check connection.");
+        setOrders([]);
+        setFetchError(
+          "Could not load orders from server. Please tap Refresh to try again.",
+        );
         setBackendConnected(false);
       }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [actor]);
+
+  // ── Load orders once actor is ready ──
+  useEffect(() => {
+    if (!isAuthed || !actor) return;
+    loadOrders();
+  }, [isAuthed, actor, loadOrders]);
 
   // ── Auto-refresh every 30s ──
   useEffect(() => {
-    if (!isAuthed) return;
-    loadOrders();
+    if (!isAuthed || !actor) return;
     const interval = setInterval(loadOrders, 30_000);
     return () => clearInterval(interval);
-  }, [isAuthed, loadOrders]);
+  }, [isAuthed, actor, loadOrders]);
 
   // ── Stats ──
   const totalOrders = orders.length;
@@ -777,11 +814,11 @@ export function AdminPanel() {
               size="sm"
               className="rounded-xl gap-1.5"
               onClick={loadOrders}
-              disabled={isLoading}
+              disabled={isLoading || actorLoading}
               data-ocid="admin.button"
             >
               <RefreshCw
-                className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`}
+                className={`w-3.5 h-3.5 ${isLoading || actorLoading ? "animate-spin" : ""}`}
               />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
@@ -852,7 +889,7 @@ export function AdminPanel() {
             <p>
               {totalOrders === 0
                 ? "No orders yet — orders placed by customers will appear here."
-                : `Loaded ${totalOrders} order${totalOrders !== 1 ? "s" : ""}.`}
+                : `Loaded ${totalOrders} order${totalOrders !== 1 ? "s" : ""} from server.`}
             </p>
           </div>
         )}
@@ -895,7 +932,7 @@ export function AdminPanel() {
         </div>
 
         {/* ── Orders List ── */}
-        {isLoading && filteredOrders.length === 0 ? (
+        {(isLoading || actorLoading) && filteredOrders.length === 0 ? (
           <div
             className="flex flex-col items-center justify-center py-24 text-center"
             data-ocid="admin.loading_state"
@@ -904,7 +941,9 @@ export function AdminPanel() {
               <RefreshCw className="w-6 h-6 text-primary animate-spin" />
             </div>
             <p className="text-sm text-muted-foreground">
-              Fetching orders from server…
+              {actorLoading
+                ? "Connecting to server…"
+                : "Fetching orders from server…"}
             </p>
           </div>
         ) : filteredOrders.length === 0 ? (
@@ -938,11 +977,11 @@ export function AdminPanel() {
               variant="outline"
               className="rounded-xl mt-4"
               onClick={loadOrders}
-              disabled={isLoading}
+              disabled={isLoading || actorLoading}
               data-ocid="admin.button"
             >
               <RefreshCw
-                className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+                className={`w-4 h-4 mr-2 ${isLoading || actorLoading ? "animate-spin" : ""}`}
               />
               Check for orders
             </Button>
@@ -955,6 +994,7 @@ export function AdminPanel() {
                   key={order.id}
                   order={order}
                   index={idx + 1}
+                  actor={actor!}
                   onOrderCancelled={loadOrders}
                   onOrderStatusChanged={loadOrders}
                 />

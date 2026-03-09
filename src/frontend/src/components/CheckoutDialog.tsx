@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { useActor } from "../hooks/useActor";
+import { createActorWithConfig } from "../config";
 import type { CartItem, Product } from "../hooks/useQueries";
 
 const STORE_EMAIL = "farhaadahmad20@gmail.com";
@@ -51,6 +51,7 @@ export interface LocalOrder {
   paymentProofUrl: string;
   status: string;
   createdAt: number;
+  backendSaved?: boolean;
 }
 
 function saveOrderToLocalStorage(order: LocalOrder) {
@@ -280,7 +281,6 @@ export function CheckoutDialog({
   totalPrice,
   onSuccess,
 }: CheckoutDialogProps) {
-  const { actor } = useActor();
   const [step, setStep] = useState<Step>(1);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -404,10 +404,33 @@ export function CheckoutDialog({
         })
         .join("\n");
 
-      // Convert proof to base64
+      // Convert proof to base64 (kept in localStorage only)
       const proofBase64 = await fileToBase64(proofFile);
 
-      // Save order to localStorage immediately (primary data store for admin panel)
+      // Save order to backend WITHOUT base64 image (to avoid ICP message size limits)
+      // The admin panel will enrich backend orders with proof images from localStorage
+      let backendSaved = false;
+      try {
+        const backendActor = await createActorWithConfig();
+        await backendActor.saveCustomerOrder({
+          customerName: formData.name,
+          customerEmail: formData.email,
+          customerPhone: formData.phone,
+          customerAddress: formData.address,
+          items: orderItems.map((item) => ({
+            productName: item.productName,
+            quantity: BigInt(item.quantity),
+            unitPrice: BigInt(item.unitPrice),
+          })),
+          totalPrice: BigInt(totalPrice),
+          paymentProofUrl: "", // Empty string — do NOT send base64 to backend (exceeds ICP message size)
+        });
+        backendSaved = true;
+      } catch (backendErr) {
+        console.warn("Backend order save failed:", backendErr);
+      }
+
+      // Save to localStorage WITH the full proof image + backendSaved flag
       const localOrder: LocalOrder = {
         id: newOrderId,
         customerName: formData.name,
@@ -416,32 +439,15 @@ export function CheckoutDialog({
         customerAddress: formData.address,
         items: orderItems,
         totalPrice: totalPrice,
-        paymentProofUrl: proofBase64,
-        status: "pending",
+        paymentProofUrl: proofBase64, // Full base64 kept locally for proof viewing
+        status: "Pending",
         createdAt: Date.now(),
+        backendSaved, // Track whether backend save succeeded
       };
       saveOrderToLocalStorage(localOrder);
 
-      // Try to save order to backend (best effort)
-      if (actor) {
-        try {
-          await actor.saveCustomerOrder({
-            customerName: formData.name,
-            customerEmail: formData.email,
-            customerPhone: formData.phone,
-            customerAddress: formData.address,
-            items: orderItems.map((item) => ({
-              productName: item.productName,
-              quantity: BigInt(item.quantity),
-              unitPrice: BigInt(item.unitPrice),
-            })),
-            totalPrice: BigInt(totalPrice),
-            paymentProofUrl: proofBase64,
-          });
-        } catch (backendErr) {
-          // Backend save failed silently — order is saved in localStorage
-          console.warn("Backend order save failed:", backendErr);
-        }
+      if (!backendSaved) {
+        console.warn("Order saved locally only — backend unavailable.");
       }
 
       // Try to send email notification (best effort)

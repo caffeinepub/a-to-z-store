@@ -68,6 +68,17 @@ export const STATIC_PRODUCTS: Product[] = [
     category: "Sparkling Mini Spray Perfume Bottles",
     imageUrl: "/assets/generated/perfume-purple-cropped.dim_600x600.jpg",
   },
+  {
+    id: BigInt(107),
+    name: "Cute Mini Magnetic Writing Board Keychain",
+    description:
+      "Adorable mini magnetic writing board keychain with cute bunny character design. Comes with stylus pen and bell charm — perfect for notes on the go!",
+    price: BigInt(0),
+    stock: BigInt(99),
+    category: "Keychains",
+    imageUrl:
+      "/assets/generated/keychain-writing-board-cropped.dim_800x800.jpg",
+  },
 ];
 
 export const STATIC_PRODUCT_IDS = new Set(

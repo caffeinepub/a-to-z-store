@@ -12,6 +12,7 @@ import {
 const CATEGORIES = [
   { id: "All", label: "All Products", icon: Tag },
   { id: "Keyrings", label: "Keyrings", icon: Key },
+  { id: "Keychains", label: "Keychains", icon: Key },
   { id: "Pencil Boxes", label: "Pencil Boxes", icon: BookOpen },
   { id: "Kids Folders", label: "Kids Folders", icon: FolderOpen },
   { id: "Perfumes", label: "Perfumes", icon: Sparkles },

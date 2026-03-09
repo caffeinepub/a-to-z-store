@@ -79,6 +79,16 @@ export const STATIC_PRODUCTS: Product[] = [
     imageUrl:
       "/assets/generated/keychain-writing-board-cropped.dim_800x800.jpg",
   },
+  {
+    id: BigInt(108),
+    name: "Soft Mochi Kuromi Squishy Toy",
+    description:
+      "Super soft and squishy Kuromi mochi toy — the popular kawaii cartoon character in a cute plump squishy form with fluffy pom-pom details. Slow-rising and satisfying to squeeze! Perfect for stress relief and gifting.",
+    price: BigInt(0),
+    stock: BigInt(99),
+    category: "Squishy Toys",
+    imageUrl: "/assets/generated/kuromi-mochi-squishy-product.dim_800x800.jpg",
+  },
 ];
 
 export const STATIC_PRODUCT_IDS = new Set(

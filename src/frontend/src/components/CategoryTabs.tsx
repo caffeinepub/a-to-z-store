@@ -6,6 +6,7 @@ import {
   ShoppingBag,
   Smartphone,
   Sparkles,
+  Star,
   Tag,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ const CATEGORIES = [
   },
   { id: "Cases", label: "Cases", icon: Smartphone },
   { id: "Bags", label: "Bags", icon: ShoppingBag },
+  { id: "Squishy Toys", label: "Squishy Toys", icon: Star },
 ];
 
 interface CategoryTabsProps {

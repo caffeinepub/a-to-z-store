@@ -19,7 +19,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Pencil Boxes": "bg-store-teal/15 text-store-teal border-store-teal/30",
   "Kids Folders": "bg-purple-100 text-purple-700 border-purple-200",
   Perfumes: "bg-pink-100 text-pink-700 border-pink-200",
-  "Perfume Mini Travel Cases":
+  "Sparkling Mini Spray Perfume Bottles":
     "bg-violet-100 text-violet-700 border-violet-200",
   Cases: "bg-blue-100 text-blue-700 border-blue-200",
   Bags: "bg-rose-100 text-rose-700 border-rose-200",

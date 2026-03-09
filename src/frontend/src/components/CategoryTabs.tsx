@@ -1,6 +1,7 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BookOpen,
+  FlaskConical,
   FolderOpen,
   Key,
   ShoppingBag,
@@ -15,6 +16,11 @@ const CATEGORIES = [
   { id: "Pencil Boxes", label: "Pencil Boxes", icon: BookOpen },
   { id: "Kids Folders", label: "Kids Folders", icon: FolderOpen },
   { id: "Perfumes", label: "Perfumes", icon: Sparkles },
+  {
+    id: "Perfume Mini Travel Cases",
+    label: "Perfume Mini Travel Cases",
+    icon: FlaskConical,
+  },
   { id: "Cases", label: "Cases", icon: Smartphone },
   { id: "Bags", label: "Bags", icon: ShoppingBag },
 ];

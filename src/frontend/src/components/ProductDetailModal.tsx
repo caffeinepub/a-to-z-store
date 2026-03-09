@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Star, Tag, X } from "lucide-react";
+import { Star, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import type { Product } from "../hooks/useQueries";
 
@@ -19,6 +19,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Pencil Boxes": "bg-store-teal/15 text-store-teal border-store-teal/30",
   "Kids Folders": "bg-purple-100 text-purple-700 border-purple-200",
   Perfumes: "bg-pink-100 text-pink-700 border-pink-200",
+  "Perfume Mini Travel Cases":
+    "bg-violet-100 text-violet-700 border-violet-200",
   Cases: "bg-blue-100 text-blue-700 border-blue-200",
   Bags: "bg-rose-100 text-rose-700 border-rose-200",
 };
@@ -40,7 +42,9 @@ export function ProductDetailModal({
       : (CATEGORY_IMAGES[product.category] ??
         "/assets/generated/hero-banner.dim_1200x400.jpg");
 
-  const actualPrice = Number(product.price) / 100;
+  const priceNum = Number(product.price);
+  const isPriceOnRequest = priceNum === 0;
+  const actualPrice = priceNum / 100;
   const mrp = Math.ceil((actualPrice * 1.25) / 10) * 10;
   const discountPct = Math.round((1 - actualPrice / mrp) * 100);
   const isOutOfStock = Number(product.stock) === 0;
@@ -83,7 +87,7 @@ export function ProductDetailModal({
               />
 
               <AnimatePresence>
-                {!isOutOfStock && (
+                {!isOutOfStock && !isPriceOnRequest && (
                   <motion.div
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -91,7 +95,6 @@ export function ProductDetailModal({
                     className="absolute top-3 left-3"
                   >
                     <span className="flex items-center gap-1 bg-primary text-primary-foreground text-xs font-bold px-2.5 py-1 rounded-full shadow-lg">
-                      <Tag className="w-3 h-3" />
                       {discountPct}% OFF
                     </span>
                   </motion.div>
@@ -148,24 +151,41 @@ export function ProductDetailModal({
               <div className="border-t border-border" />
 
               {/* Pricing */}
-              <div className="flex items-end gap-3 flex-wrap">
-                <div className="flex flex-col">
-                  <span className="text-xs text-muted-foreground mb-0.5 uppercase tracking-wider font-medium">
+              {isPriceOnRequest ? (
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
                     Price
                   </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl sm:text-3xl font-bold text-primary">
-                      ₹{actualPrice.toFixed(0)}
-                    </span>
-                    <span className="text-base text-muted-foreground line-through">
-                      ₹{mrp.toFixed(0)}
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-bold text-violet-600 italic">
+                      Price on Request
                     </span>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    DM us on Instagram to ask for the price and place your
+                    order.
+                  </p>
                 </div>
-                <span className="bg-green-500/15 text-green-700 text-xs font-bold px-2.5 py-1 rounded-lg mb-0.5">
-                  You save ₹{(mrp - actualPrice).toFixed(0)}
-                </span>
-              </div>
+              ) : (
+                <div className="flex items-end gap-3 flex-wrap">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground mb-0.5 uppercase tracking-wider font-medium">
+                      Price
+                    </span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl sm:text-3xl font-bold text-primary">
+                        ₹{actualPrice.toFixed(0)}
+                      </span>
+                      <span className="text-base text-muted-foreground line-through">
+                        ₹{mrp.toFixed(0)}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="bg-green-500/15 text-green-700 text-xs font-bold px-2.5 py-1 rounded-lg mb-0.5">
+                    You save ₹{(mrp - actualPrice).toFixed(0)}
+                  </span>
+                </div>
+              )}
 
               {/* Stock status */}
               <div className="flex items-center gap-2">

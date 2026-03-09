@@ -17,6 +17,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Pencil Boxes": "bg-store-teal/10 text-store-teal",
   "Kids Folders": "bg-purple-100 text-purple-700",
   Perfumes: "bg-pink-100 text-pink-700",
+  "Perfume Mini Travel Cases": "bg-violet-100 text-violet-700",
   Cases: "bg-blue-100 text-blue-700",
   Bags: "bg-rose-100 text-rose-700",
 };
@@ -38,11 +39,17 @@ export function ProductCard({
       : (CATEGORY_IMAGES[product.category] ??
         "/assets/generated/hero-banner.dim_1200x400.jpg");
 
-  const displayPrice = `₹${(Number(product.price) / 100).toFixed(0)}`;
+  const priceNum = Number(product.price);
+  const isPriceOnRequest = priceNum === 0;
+  const displayPrice = isPriceOnRequest
+    ? "Price on Request"
+    : `₹${(priceNum / 100).toFixed(0)}`;
   const categoryColor =
     CATEGORY_COLORS[product.category] ?? "bg-muted text-muted-foreground";
   const isOutOfStock = Number(product.stock) === 0;
-  const isBagProduct = product.category === "Bags";
+  const isNew =
+    product.category === "Bags" ||
+    product.category === "Perfume Mini Travel Cases";
 
   return (
     <motion.article
@@ -72,9 +79,9 @@ export function ProductCard({
             </span>
           </div>
         )}
-        {isBagProduct && (
+        {isNew && (
           <div className="absolute top-2 right-2">
-            <span className="bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
+            <span className="bg-violet-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
               New
             </span>
           </div>
@@ -108,7 +115,15 @@ export function ProductCard({
 
         {/* Price + CTA */}
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-border">
-          <span className="price-tag text-xl text-primary">{displayPrice}</span>
+          <span
+            className={`font-bold text-sm ${
+              isPriceOnRequest
+                ? "text-violet-600 italic"
+                : "price-tag text-xl text-primary"
+            }`}
+          >
+            {displayPrice}
+          </span>
           <Button
             size="sm"
             variant="outline"

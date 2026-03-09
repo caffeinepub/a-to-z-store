@@ -15,7 +15,8 @@ export function useActor() {
       const isAuthenticated = !!identity;
 
       if (!isAuthenticated) {
-        // Return anonymous actor if not authenticated
+        // Return anonymous actor directly — do NOT call _initializeAccessControlWithSecret
+        // on anonymous actors as that method may not exist or throws
         return await createActorWithConfig();
       }
 
@@ -26,6 +27,7 @@ export function useActor() {
       };
 
       const actor = await createActorWithConfig(actorOptions);
+      // Only call _initializeAccessControlWithSecret when user is authenticated
       const adminToken = getSecretParameter("caffeineAdminToken") || "";
       await actor._initializeAccessControlWithSecret(adminToken);
       return actor;

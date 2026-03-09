@@ -932,7 +932,8 @@ export function AdminPanel() {
         </div>
 
         {/* ── Orders List ── */}
-        {(isLoading || actorLoading) && filteredOrders.length === 0 ? (
+        {(!actor || isLoading || actorLoading) &&
+        filteredOrders.length === 0 ? (
           <div
             className="flex flex-col items-center justify-center py-24 text-center"
             data-ocid="admin.loading_state"
@@ -941,7 +942,7 @@ export function AdminPanel() {
               <RefreshCw className="w-6 h-6 text-primary animate-spin" />
             </div>
             <p className="text-sm text-muted-foreground">
-              {actorLoading
+              {!actor || actorLoading
                 ? "Connecting to server…"
                 : "Fetching orders from server…"}
             </p>
@@ -994,7 +995,7 @@ export function AdminPanel() {
                   key={order.id}
                   order={order}
                   index={idx + 1}
-                  actor={actor!}
+                  actor={actor ?? ({} as backendInterface)}
                   onOrderCancelled={loadOrders}
                   onOrderStatusChanged={loadOrders}
                 />

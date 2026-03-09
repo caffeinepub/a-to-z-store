@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
+import React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AdminPanel } from "./components/AdminPanel";
@@ -27,6 +28,47 @@ const CAFE_ADMIN_TOKEN_KEY = "atoz_cafe_admin_token";
     // Ignore storage errors
   }
 })();
+
+// ── Error Boundary ───────────────────────────────────────────────────────────
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center">
+          <div className="max-w-sm">
+            <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">⚠️</span>
+            </div>
+            <h1 className="font-bold text-xl text-foreground mb-2">
+              Something went wrong
+            </h1>
+            <p className="text-sm text-muted-foreground mb-6">
+              The app ran into an error. Please refresh the page to try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ── Store ────────────────────────────────────────────────────────────────────
 function Store() {
@@ -190,9 +232,9 @@ export default function App() {
   }, []);
 
   return (
-    <>
+    <ErrorBoundary>
       <Toaster position="top-right" richColors />
       {currentHash === "#/admin" ? <AdminPanel /> : <Store />}
-    </>
+    </ErrorBoundary>
   );
 }

@@ -18,7 +18,6 @@ const SKELETON_KEYS = [
 interface ProductGridProps {
   products: Product[];
   isLoading: boolean;
-  onAddToCart: (product: Product) => void | Promise<void>;
   activeCategory: string;
   onProductClick: (product: Product) => void;
 }
@@ -37,7 +36,6 @@ function ProductSkeleton() {
         <Skeleton className="h-3 w-2/3" />
         <div className="flex items-center justify-between pt-2 border-t border-border mt-1">
           <Skeleton className="h-6 w-16" />
-          <Skeleton className="h-8 w-28 rounded-xl" />
         </div>
       </div>
     </div>
@@ -47,7 +45,6 @@ function ProductSkeleton() {
 export function ProductGrid({
   products,
   isLoading,
-  onAddToCart,
   activeCategory,
   onProductClick,
 }: ProductGridProps) {
@@ -106,7 +103,6 @@ export function ProductGrid({
             <ProductCard
               product={product}
               index={index}
-              onAddToCart={onAddToCart}
               onProductClick={onProductClick}
             />
           </li>

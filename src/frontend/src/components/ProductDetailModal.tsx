@@ -1,10 +1,8 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, ShoppingCart, Star, Tag, X } from "lucide-react";
+import { Star, Tag, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
 import type { Product } from "../hooks/useQueries";
 
 const CATEGORY_IMAGES: Record<string, string> = {
@@ -28,17 +26,12 @@ const CATEGORY_COLORS: Record<string, string> = {
 interface ProductDetailModalProps {
   product: Product | null;
   onClose: () => void;
-  onAddToCart: (product: Product) => void | Promise<void>;
 }
 
 export function ProductDetailModal({
   product,
   onClose,
-  onAddToCart,
 }: ProductDetailModalProps) {
-  const [isAdding, setIsAdding] = useState(false);
-  const [justAdded, setJustAdded] = useState(false);
-
   if (!product) return null;
 
   const imageUrl =
@@ -48,25 +41,12 @@ export function ProductDetailModal({
         "/assets/generated/hero-banner.dim_1200x400.jpg");
 
   const actualPrice = Number(product.price) / 100;
-  // Calculate MRP: 25% higher, rounded to nearest 10
   const mrp = Math.ceil((actualPrice * 1.25) / 10) * 10;
   const discountPct = Math.round((1 - actualPrice / mrp) * 100);
   const isOutOfStock = Number(product.stock) === 0;
   const categoryColor =
     CATEGORY_COLORS[product.category] ??
     "bg-muted text-muted-foreground border-border";
-
-  const handleAddToCart = async () => {
-    if (isAdding || isOutOfStock) return;
-    setIsAdding(true);
-    try {
-      await onAddToCart(product);
-      setJustAdded(true);
-      setTimeout(() => setJustAdded(false), 1800);
-    } finally {
-      setIsAdding(false);
-    }
-  };
 
   return (
     <Dialog open={!!product} onOpenChange={(open) => !open && onClose()}>
@@ -87,7 +67,7 @@ export function ProductDetailModal({
 
         <ScrollArea className="max-h-[90vh]">
           <div className="flex flex-col">
-            {/* Hero image area */}
+            {/* Hero image */}
             <div
               className="relative overflow-hidden bg-muted"
               style={{ aspectRatio: "16/9" }}
@@ -102,7 +82,6 @@ export function ProductDetailModal({
                 className="w-full h-full object-cover"
               />
 
-              {/* Discount badge — top left */}
               <AnimatePresence>
                 {!isOutOfStock && (
                   <motion.div
@@ -119,7 +98,6 @@ export function ProductDetailModal({
                 )}
               </AnimatePresence>
 
-              {/* Out of stock overlay */}
               {isOutOfStock && (
                 <div className="absolute inset-0 bg-foreground/50 flex items-center justify-center">
                   <span className="bg-card text-foreground text-sm font-bold px-4 py-2 rounded-full">
@@ -136,7 +114,7 @@ export function ProductDetailModal({
               transition={{ duration: 0.35, delay: 0.1 }}
               className="p-5 sm:p-6 flex flex-col gap-4"
             >
-              {/* Category badge + rating */}
+              {/* Category + rating */}
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <Badge
                   variant="outline"
@@ -158,21 +136,18 @@ export function ProductDetailModal({
                 </div>
               </div>
 
-              {/* Product name */}
               <h2 className="font-display font-700 text-xl sm:text-2xl text-foreground leading-tight">
                 {product.name}
               </h2>
 
-              {/* Description */}
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {product.description ||
-                  `Premium quality ${product.category.toLowerCase()} crafted with care. Perfect for everyday use and gifting. Made with durable materials that ensure long-lasting use.`}
+                  `Premium quality ${product.category.toLowerCase()} crafted with care. Perfect for everyday use and gifting.`}
               </p>
 
-              {/* Divider */}
               <div className="border-t border-border" />
 
-              {/* Pricing block */}
+              {/* Pricing */}
               <div className="flex items-end gap-3 flex-wrap">
                 <div className="flex flex-col">
                   <span className="text-xs text-muted-foreground mb-0.5 uppercase tracking-wider font-medium">
@@ -187,12 +162,9 @@ export function ProductDetailModal({
                     </span>
                   </div>
                 </div>
-
-                <div className="flex flex-col gap-1 pb-0.5">
-                  <span className="bg-green-500/15 text-green-700 text-xs font-bold px-2.5 py-1 rounded-lg">
-                    You save ₹{(mrp - actualPrice).toFixed(0)}
-                  </span>
-                </div>
+                <span className="bg-green-500/15 text-green-700 text-xs font-bold px-2.5 py-1 rounded-lg mb-0.5">
+                  You save ₹{(mrp - actualPrice).toFixed(0)}
+                </span>
               </div>
 
               {/* Stock status */}
@@ -211,37 +183,26 @@ export function ProductDetailModal({
                 </span>
               </div>
 
-              {/* Add to cart CTA */}
-              <Button
-                size="lg"
-                className={`w-full h-12 rounded-xl font-bold text-base gap-2 transition-all mt-1
-                  ${
-                    justAdded
-                      ? "bg-green-500 hover:bg-green-500 text-white"
-                      : "bg-primary hover:bg-primary/90 text-primary-foreground"
-                  }`}
-                onClick={handleAddToCart}
-                disabled={isAdding || isOutOfStock}
+              {/* Instagram CTA */}
+              <a
+                href="https://www.instagram.com/A2zStore.MegaMart"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full h-12 rounded-xl font-bold text-base bg-gradient-to-r from-pink-500 via-rose-500 to-orange-400 text-white hover:opacity-90 transition-opacity mt-1"
                 data-ocid="product.modal.primary_button"
-                aria-label={`Add ${product.name} to cart`}
               >
-                {isAdding ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <ShoppingCart className="w-5 h-5" />
-                )}
-                {isAdding
-                  ? "Adding..."
-                  : justAdded
-                    ? "Added to Cart!"
-                    : isOutOfStock
-                      ? "Out of Stock"
-                      : "Add to Cart"}
-              </Button>
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-5 h-5 fill-current"
+                  aria-hidden="true"
+                >
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                </svg>
+                Order via Instagram @A2zStore.MegaMart
+              </a>
 
-              {/* Delivery note */}
               <p className="text-center text-xs text-muted-foreground">
-                🚚 Free delivery within Delhi · ₹120 delivery for rest of India
+                DM us on Instagram to place your order
               </p>
             </motion.div>
           </div>
